@@ -1,6 +1,8 @@
 # Grimsup — a production system I own end to end, with real users
 
-**[grimsup.com](https://grimsup.com)** · public since 2026-08-29 · in production with real users
+**[grimsup.com](https://grimsup.com)** · live since 2026-08-29 · in production with real users
+
+> **The code is private** — it handles real users' photos. This repository is the system's design, operations, and incident record.
 
 > 🇰🇷 한국어: [README.ko.md](./README.ko.md)
 
