@@ -1,4 +1,4 @@
-# Grimsup — building and running a small art school's system, alone
+# Grimsup — a production system I own end to end, with real users
 
 **[grimsup.com](https://grimsup.com)** · public since 2026-08-29 · in production with real users
 
