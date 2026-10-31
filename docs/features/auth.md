@@ -1,17 +1,17 @@
 # Login · onboarding · permissions — who may see which child's photos
 
-> Google proves **"whose account is this?"** It cannot know **"whose parent is this?"**, so the teacher
-> approves that part. This document covers those two steps and the permission rules built on top of them.
+> Google or Kakao proves **"whose account is this?"** It cannot know **"who is this at the school?"**, so
+> the teacher approves that part. This document covers those two steps and the permission rules built on top of them.
 >
 > OAuth login itself is the same everywhere, so it is short here. **Decisions specific to this project**
 > get the space. Why permissions matter more than usual in this project: **every upcoming feature behaves
-> differently per role.** In the community only the teacher posts notices. Grimi gives parents, the
+> differently per role.** In the community only the teacher posts notices. Grimmy gives parents, the
 > teacher, and visitors different tools. All of that rests on the roles and states defined here.
 > If this layer wobbles, everything above it wobbles.
 
 ---
 
-## 1. Login — Google OAuth
+## 1. Login — Google · Kakao OAuth
 
 ```
 /auth/google/login      validate the return path (next) against an allow-list → set oauth_state cookie → go to Google
@@ -20,6 +20,10 @@ Google login screen     the user picks an account. We never see the password
 /auth/google/callback   compare state (compare_digest) → create or update the user → JWT cookie → redirect to next
                         JWT: 7 days · HttpOnly · SameSite=Lax · Secure in production only
 ```
+
+Kakao uses the same flow. Only the endpoints and the shape of the user info differ, so both providers
+share one implementation. The token stores only the user's UUID, not which provider they came from,
+so nothing after login had to change.
 
 **Why a cookie.** If the JWT came back in the response body, the frontend would keep it in `localStorage`,
 and one XSS would leak it. An HttpOnly cookie cannot be read by JavaScript, which blocks "steal the token
@@ -34,12 +38,13 @@ We pay one DB read per request to buy "revocation takes effect immediately".
 how many users there are. It also keeps the token independent of Google as a login provider: when another
 provider is added, the auth layer does not change.
 
-### 🔴 The return path (`next`) is an allow-list of 7 paths
+### 🔴 The return path (`next`) is an allow-list
 
 A deny-list has to know every variant. Block `//evil.com` and `/\evil.com` remains; block that and
 `%2f%2fevil.com` remains. *"We prefix our own domain, so it is safe"* is also wrong: with `@evil.com`,
 everything before the `@` is read as a username and the user lands elsewhere. So only paths on the
-allow-list (`/`, `/about`, `/gallery` …) pass. Anything else goes to the home page.
+allow-list (`/`, `/about`, `/gallery` …) pass, plus post links matched by one exact pattern
+(a full UUID, nothing after it). Anything else goes to the home page.
 
 ⚠️ `state` is not reused as `next`. `state` answers exactly one question, *"did this browser start this
 flow?"* Where to return is a different question.
@@ -48,7 +53,7 @@ flow?"* Where to return is a different question.
 
 ## 2. Onboarding — account states
 
-Every new account **starts as `pending`.** A Google login by itself opens nothing.
+Every new account **starts as `pending`.** A login by itself opens nothing.
 
 ```
 guest / pending     logged in only. The onboarding screen appears
@@ -57,17 +62,20 @@ guest / pending     logged in only. The onboarding screen appears
      │                        │
      │                        └─ teacher approves  →  parent / active     the gallery opens
      │
+     ├─ picks "student" →  student / pending    the teacher records guardian consent (phone · text · in person)
+     │                        │
+     │                        └─ teacher approves  →  student / active    the community opens (no gallery)
+     │
      └─ picks "visitor" →  guest / active      school page only. No child data is stored
 ```
 
 - **Only the teacher's admin screen moves an account to `active`.** Onboarding code writes `pending` at most.
 - If someone submits as a parent and then switches to visitor, **the child's name and phone number are
   deleted** so nothing stays on an outsider's account (minimum retention).
-- Re-submitting overwrites. The teacher always sees the latest submission.
-- Submitting again while already `parent/active` returns **409**, so an approved account cannot slide
-  back to `pending` by accident.
-- No onboarding in any role without consent. The email and name from Google are already stored, so
-  consent to that storage comes first.
+- Submitting again while already `parent/active` or `student/active` returns **409**, so an approved
+  account cannot slide back to `pending` by accident.
+- No onboarding in any role without consent. The email and name from the login provider are already
+  stored, so consent to that storage comes first.
 
 ### Approval is one transaction
 
@@ -79,12 +87,6 @@ that can never open the gallery.
 already linked?" before inserting; the unique constraint does it. A check followed by an insert
 (check-then-act) can be interleaved by another request and still break. Rooms work the same way:
 one room per guardian is a unique constraint, so a second room cannot exist.
-
-### The `else` of an enum branch is a 500
-
-If `role` is neither `parent` nor `guest`, we do not quietly move on. **We raise a 500.** Quietly moving on
-means an account could become `active` without approval, and that is worse than an error. When a new role
-arrives (the community's `student`), this spot is guaranteed to blow up.
 
 ---
 
@@ -104,23 +106,39 @@ Smaller rules that go with it:
 
 - **Internal integer ids never leave the fence.** Only UUIDs go outside.
 - **The admin screen returns 404, not 403, to anonymous users.** A 403 says "there is something here".
-- **Responses list their fields explicitly.** Returning an ORM object as-is lets internal fields
-  (`provider_id` and friends) leak quietly.
-- **Validation lives in schemas.** Data that reaches a handler is already safe: phone numbers normalized,
-  roles limited with `Literal`.
-- **No raw SQL.** That means building SQL statements as strings and sending them to the database.
-  The ORM sends the statement and the values separately, so user input can never be read as a command.
-  String SQL bypasses that separation, and the defense at that spot is gone the first time it is used.
-  The only way to keep the rule was to allow no exceptions.
+- **No raw SQL — no exceptions.**
 - **API docs are closed in production** (`/docs` · `/redoc` · `/openapi.json`). This does not fix a
   vulnerability. It **withholds the map**: one file lists the names, arguments, and response shapes of
-  20 endpoints. Turning off `/docs` alone closes nothing. The three are one set.
+  every endpoint. Turning off `/docs` alone closes nothing. The three are one set.
 
 ---
 
-## 4. When a second login provider arrives
+## 4. A second login provider — one person, one account, several ways in
 
-Today there is only Google, so `users` carries `provider` and `provider_id` directly. When a second
-provider (Kakao) arrives, it must become **one person = one account, several login methods**, so login
-methods move to their own table. It is not done now because there is nothing to validate yet. It is done
-before the community because **schema changes are cheap while the tables are small.**
+When Kakao was added, login methods moved out of `users` into their own table: **one person = one
+account, several login methods.** It was done before the community opened, because **schema changes are
+cheap while the tables are small.**
+
+### The same person comes in through a second door — four cases
+
+| # | Situation | Result |
+|---|---|---|
+| 1 | Same door again | normal login |
+| 2 | Different door · same email | refused: "log in the way you first signed up" |
+| 3 | Different door · different email · same phone | refused, and asked to contact the teacher |
+| 4 | All three differ | treated as a different person → the teacher decides at approval |
+
+Case 4 is not a hole. Two guardians of the same child, each on their own phone and provider, look exactly
+like this, and both have to get in. Where the system has no information, the teacher, who knows the
+family, decides.
+
+**Same email is never merged automatically.** Otherwise anyone could create a Kakao account with someone
+else's email and take over that parent's account. Two logins are joined only when the logged-in person
+presses "link" themselves — and *who* gets the new login is decided by the login cookie, never by a value
+in the URL.
+
+**An empty account can be absorbed.** People sometimes tried the second door before linking, which left
+an empty account holding the login they then wanted to link. If that account is still unapproved, has
+only that one login, and holds no data at all, the login moves over and the empty account is deleted
+(audited). Otherwise the link is refused. Without this, each case needed the developer to delete the
+account by hand — not possible while operating remotely.

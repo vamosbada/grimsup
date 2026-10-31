@@ -18,10 +18,11 @@
 ```
 Users      Browser / home-screen app (PWA) + Service Worker (receives push)
 Frontend   Next.js static export → Cloudflare Pages (CDN). No server runtime
-Backend    FastAPI (Docker) → Fly.io, Singapore. Auth · permission checks · gallery · admin · push · audit log
+Backend    FastAPI (Docker) → Fly.io, Singapore. Auth · permission checks · gallery · community · admin · push · audit log
 Storage    PostgreSQL (managed) · Cloudflare R2 (photo originals + thumbnails, private bucket)
-External   Google OAuth · Apple/Google push servers
-Planned    Grimi (LLM API) · community · pickup alerts — all on the same backend · observability (alerts · log retention · backups)
+External   Google OAuth · Kakao OAuth · Apple/Google push servers · GIPHY (GIF search, called by the browser directly)
+Ops        Error and uptime alerts by email · daily backup to separate storage
+Planned    Grimmy (LLM API) · pickup alerts — both on the same backend · log retention
 ```
 
 **One arrow matters most.** Photos go **from R2 straight to the browser.** They never pass through our
@@ -47,21 +48,27 @@ Forgetting a permission check on a new endpoint becomes structurally hard.
 It cannot know *whether this person is a parent at this school*. So after sign-up, the gallery stays
 closed until the teacher approves.
 
-→ Login flow · account states · the smaller rules (UUIDs · 404 · allow-listed responses · no raw SQL · API docs closed):
+→ Login flow · account states · the smaller rules (UUIDs · 404 · no raw SQL · API docs closed):
 [features/auth.md](./features/auth.md)
 
 ---
 
 ## 3. Data model
 
-9 tables · 13 migrations.
+16 tables · 19 migrations.
 
 ```
-users ─┬─< student_parents >─ students     guardian links (N:M)
+users ─┬─< user_identities                 login methods (Google · Kakao) — one person, one account
+       ├─< student_parents >─ students     guardian links (N:M) · a student account links to its student row
        ├── rooms (1:1)                     one parent = one room
        │     ├─< messages ─< message_reactions
        │     │      └── students (display)   whose drawing this is
        │     └─< room_reads                how far each person has read
+       ├─< posts ─┬─< comments             one level of replies
+       │          ├─< post_reads           who read it (count for all · names for the teacher)
+       │          ├─< post_reactions
+       │          └─< post_media           photos inside a post
+       ├─< notifications                   unread badges
        ├─< push_subscriptions              one row per device
        └─< audit_logs                      who opened what
 ```
@@ -133,6 +140,11 @@ Backend    fly deploy (from a laptop) → image build → release_command runs m
 **Public lock switch.** One environment variable moves three things at once: the public page becomes
 a "coming soon" screen · a `noindex` meta tag · `Disallow` in `robots.txt`. We could rehearse on real
 devices before launch without search engines picking it up.
+
+```
+Backups    GitHub Actions, daily → pg_dump → separate R2 storage, kept 30 days
+           A cron monitor alerts if the job fails or never runs at all · a restore was tested once
+```
 
 There is no CI yet. Checks (pytest · types · lint) run by hand before each deploy.
 Automation is part of "remote operation" on the [roadmap](./roadmap.md).

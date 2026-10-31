@@ -11,9 +11,12 @@ ran on **scattered tools**: photos went out through a messenger app, notices thr
 questions by phone. None of it belonged to the school. This project pulls that into **one system the
 school owns.**
 
-Live today: Google login with teacher approval · a per-child gallery · phone push notifications · an
-admin screen · a public page that search engines can find · audit log and structured logging.
-Community and an AI agent come next. **One person owns the whole cycle**: planning, design, code,
+Live today: Google and Kakao login with teacher approval · a per-child gallery · a community board
+(teacher notices, kids' drawings, a talk board with private posts, comments, emoji reactions) ·
+phone push notifications · an admin screen · a public page that search engines can find ·
+audit log and structured logging · error alerts and daily backups.
+Kids and parents sign up and post on their own; the teacher approves who gets in.
+An AI agent comes next. **One person owns the whole cycle**: planning, design, code,
 deployment, real-user support, and incident response.
 
 > This repo **explains the system. It does not contain the code.**
@@ -54,14 +57,15 @@ PC. The screens are designed separately for each, but the code and the deploymen
 
 | Feature | What | Who | Status |
 |---|---|---|---|
-| **Login · onboarding** | Google login → choose parent or visitor → parents wait for teacher approval. Google proves *whose account* this is. The teacher proves *whose parent* this is | anyone | ✅ live · [details](./docs/features/auth.md) |
+| **Login · onboarding** | Google or Kakao login → choose parent, student, or visitor → parents and students wait for teacher approval (for a student, the teacher records guardian consent first). One person can link both logins to one account. Google and Kakao prove *whose account* this is. The teacher proves *who this is at the school* | anyone | ✅ live · [details](./docs/features/auth.md) |
 | **Gallery** | A photo the teacher uploads is visible only to that child's guardians. Per-child album · emoji reactions · read receipts · scroll back to old work | parents ↔ teacher | ✅ live · [details](./docs/features/gallery.md) |
-| **Web push** | Install to the home screen and the phone rings when a photo arrives | parents · teacher | ✅ live |
-| **Admin** | Approve sign-ups · register students · link guardians · manage accounts | teacher | ✅ live |
+| **Community** | Four boards: teacher notices · school news · kids' drawings · a talk board with private posts. Rich-text posts · comments · emoji reactions · unread badges. Replaced the external app the school used for notices | whole school | ✅ live · [details](./docs/features/community.md) |
+| **Web push** | Install to the home screen and the phone rings when a photo, a new post, or a comment arrives | parents · students · teacher | ✅ live |
+| **Admin** | Approve parents and students · register students · link guardians · full member roster · manage accounts | teacher | ✅ live |
 | **School page** | Location · classes · photos. Public page with search and link previews · privacy policy | anyone | ✅ live |
-| **Community** | Teacher posts notices; kids and parents write posts. Replaces the external app used today | whole school | next |
-| **Grimi (AI Agent)** | An agent with **different tools for parents, teacher, and visitors**. From answering questions and handling absence/make-up requests to the teacher's morning briefing and pickup alerts. Not a chatbot wrapped around an API — an agent with permission boundaries, audit, and tracing | whole school | planned |
-| **Pickup alerts** | Notify the guardian's phone when a child arrives or leaves. Whether this lives inside Grimi or stands alone will be decided on site | parents | planned |
+| **Monitoring · backups** | Error and uptime alerts by email · daily database backup, with a restore actually tested | developer | ✅ live |
+| **Grimmy (AI Agent)** | An agent with **different tools for parents, teacher, and visitors**. From answering questions and handling absence/make-up requests to the teacher's morning briefing and pickup alerts. Not a chatbot wrapped around an API — an agent with permission boundaries, audit, and tracing | whole school | planned |
+| **Pickup alerts** | Notify the guardian's phone when a child arrives or leaves. Whether this lives inside Grimmy or stands alone will be decided on site | parents | planned |
 
 **Every finished feature gets one document under `docs/features/`**: why it was built that way,
 and which decisions are actually wired into the code.
@@ -88,11 +92,15 @@ Storage    PostgreSQL (managed) · Cloudflare R2 (photos)
 
 Incidents are treated as harvest, not accidents. Each one is written up in four parts:
 **detect → diagnose → recover → what we learned**. Missed causes and wrong guesses stay in the record.
-There were two incidents in the first week after launch. Both were found **by chance, not by an alert**.
-That is the biggest open gap in this project right now, and it is not hidden.
+There were two incidents in the first week after launch, and **neither was found by an alert**:
+one was reported by a person, the other spotted by chance in the logs. So alerting and daily backups
+went in next, with a restore actually tested.
 
-**What is still missing**: alerting · log retention · our own backups · frontend tests.
-Operations here means **knowing what is missing**, not claiming everything is in place.
+Then the alerts started doing their job. A race between two identical requests **was caught by an
+alert before any user noticed**, fixed, and locked in with a regression test. The next day, a host
+failure at the cloud provider **was caught by an alert three minutes in.** I saw it right away, on a
+flight to Mexico, and could do nothing about it. The provider recovered on its own 17 minutes later.
+Detecting a problem and being able to respond to it turned out to be two different things.
 
 → Full incident write-ups and the recording rules: **[docs/incidents.md](./docs/incidents.md)**
 
@@ -101,17 +109,15 @@ Operations here means **knowing what is missing**, not claiming everything is in
 ## What comes next
 
 ```
-Observability first   Alerts (including request-rate anomalies) · log retention · health checks ·
-                      backup and restore drills · frontend tests · SLOs.
-                      Two incidents set this order. Before features.
-
-Community             Notices + comments → turn off the external app → kids' posts.
-                      A second login provider lands first.
-
-Grimi (AI Agent)      LangGraph · RAG (pgvector) · tool calling. Per-role tools · 7 safeguards.
+Grimmy (AI Agent)     LangGraph · RAG (pgvector) · tool calling. Per-role tools · 7 safeguards.
                       Stabilize with read-only tools first → write tools only after the safeguards stand.
 
-Remote operation      Three months in another country, maintenance only. Observability is the precondition.
+Operations            Log retention · frontend tests · CI · SLOs.
+
+Remote operation      Running now: three months from another country, maintenance only.
+                      Alerts and backups were the precondition, and they went in before leaving.
+
+Pickup alerts         Needs on-site testing, so it waits until I am back.
 ```
 
 → Confirmed vs. direction, kept apart: **[docs/roadmap.md](./docs/roadmap.md)**
@@ -123,10 +129,12 @@ Remote operation      Three months in another country, maintenance only. Observa
 | Area | What |
 |---|---|
 | Frontend | Next.js (App Router · static export) · TypeScript · Tailwind · PWA + Web Push |
-| Backend | FastAPI · SQLAlchemy · Alembic · pytest against real PostgreSQL |
-| DB | PostgreSQL (managed) · 9 tables · 13 migrations |
+| Backend | FastAPI · SQLAlchemy · Alembic |
+| DB | PostgreSQL (managed) · 16 tables · 19 migrations |
 | Infra | Cloudflare Pages + R2 · Fly.io (Docker) · Cloudflare Registrar |
-| Auth | Google OAuth · HttpOnly cookie JWT · teacher approval for membership |
+| Auth | Google · Kakao OAuth · HttpOnly cookie JWT · teacher approval for membership |
+| Testing | pytest against real PostgreSQL · TypeScript · ESLint |
+| Ops | Sentry (errors · uptime · cron) · GitHub Actions (daily backups) |
 | Planned | LangGraph (AI agent) · pgvector (RAG) |
 
 ---

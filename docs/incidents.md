@@ -16,11 +16,16 @@
 
 > One row per incident. If the "detected by" column never says "alert", that is this project's biggest
 > open gap. "Noticed → over" is measured from the user's point of view, not from deploy time.
+>
+> #1 and #2 were found by a person and by chance. Alerting went in on 10-14.
+> **#3 and #4 were both caught by an alert.**
 
 | # | Date | Grade | Detected by | Noticed → over | Open items |
 |---|------|-------|-------------|----------------|------------|
-| 2 | 09-01 | 🟡 | chance | unknown (old JS kept running in open tabs) | alerting · log retention · frontend tests |
-| 1 | 08-29 | 🔴 | a person | ~20 min | alerting · log retention |
+| 4 | 10-16 | 🟢 | **alert** | no user impact | ✅ fixed 10-23 (regression test) |
+| 3 | 10-17 | 🟡 | **alert** | ~14 min (the provider recovered on its own) | responding from a phone alone · single machine |
+| 2 | 09-01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10-14 · log retention · frontend tests |
+| 1 | 08-29 | 🔴 | a person | ~20 min | ✅ alerting 10-14 · log retention |
 
 **Grading — one question: "could the user do what they came to do?"**
 
@@ -140,6 +145,97 @@ Action    (one line · commit hash)
 # Log
 
 <!-- Newest first. #2 and #1 keep the pre-revision format -->
+
+## 🟢 No impact #4 — two identical "read" requests at the same moment caused a 500 (2026-10-16 06:20 KST)
+
+```
+Detected  alert — investigated 3 days later (traveling, then settling in)
+Cause     "check, then insert if missing": two simultaneous requests from the same user both saw
+          "missing" and both inserted → primary key collision → 500. The first one had already saved,
+          so the read mark was correct. The gap had been noted in a code comment beforehand
+Action    one statement (INSERT … ON CONFLICT DO NOTHING) + a row lock, so the second request waits and
+          compares against the new value · regression test that fails on the old code with the same error ·
+          deployed 10-23
+```
+
+## 🚨 Incident #3 — a host failure at the provider: the alert fired, and there was nothing I could do (2026-10-17 06:00 KST)
+
+> **The first time an alert caught an outage.** At that moment I was on a flight to Mexico, holding no
+> lever at all. It showed that being able to detect a problem and being able to respond to it are two
+> different things.
+
+```
+Impact   The whole API (api.grimsup.com) unresponsive for ~17 min · whether anyone tried to use it: unknown
+Grade    🟡 degraded — the service was fully blocked, but it was Saturday 6 a.m. and no attempt could be confirmed
+         no workaround · anyone who tried would have seen "it won't open"
+Timeline (KST)
+         occurred  around 06:00 (last healthy log line just before)
+         noticed   06:03 alert — seen immediately (in-flight Wi-Fi)
+         fix       none — zero changes on our side
+         over      06:17 (machine booted → app server started)
+```
+
+### Detect — how we noticed
+
+**By: alert** — the first one, after #1 (a person) and #2 (chance).
+
+The uptime check (`/health` every minute · alert after 3 failures in a row) fired at 06:03.
+About **3 minutes** from failure to alert — the same number measured in the down test on 10-14.
+
+I was **on a flight to Mexico** and saw the alert right away over the in-flight Wi-Fi.
+I tried to reach my dev tools from the phone; that failed. After that there was nothing I could do.
+
+When it recovered (06:17) I only learned later — the alert fires on new issues and regressions, not on
+recovery. The issue had closed itself once the uptime check succeeded again.
+The cause was investigated **3 days later**, while settling in.
+
+### Diagnose — how we narrowed it to the cause
+
+**What we saw** (the host's log search — the CLI log command only reaches back a short time):
+
+```
+Uptime trace   every request waited ~5 s and got no status code
+Host logs      last /health 200 → then nothing for ~10 min
+               [PU03] unreachable worker host … this is a Fly issue
+               [PM02] could not wake up machine
+               [PM01] machine still attempting to start
+               machine booted → app server started
+```
+
+**Order of elimination**:
+1. Trace → no answer for 5 s. That alone cannot tell "the app was slow" from "the request never reached the app" → logs
+2. A 10-minute gap in `/health` logs → requests never reached the app
+3. `PU03` → a host failure at the provider. Machines are configured never to auto-stop, so we had not put it to sleep either
+
+**Wrong guesses**: "our server is slow to send the response back" — the waiting time in the trace was the
+uptime checker waiting on *us*. I had the direction backwards.
+
+Not checked: the provider's status page for that day.
+
+### Recover — what changed
+
+```
+Changed         nothing — the provider recovered on its own
+Temporary/root  n/a
+Deployed        nothing
+Verified        uptime checks succeeding again · issue closed itself
+Regression test none — not our code
+Rollback        n/a
+```
+
+### What we learned — why we did not catch it earlier
+
+**Why automated checks passed**: n/a — not our code or config, the provider's host.
+
+**Why docs or rules did not warn us**: only *detection* had been designed. What to do **with only a
+phone** after the alert arrives was never decided — and that is exactly the gap for three months of
+remote operation. (Even with a laptop, one machine and a host failure may have left no lever.)
+Also: #2's note that "the host only keeps recent logs" was true for the CLI. The host's log search
+went back three days.
+
+**Next candidate of the same kind**: the same host failure — with a single machine, it means a full
+outage again. Whether to add a second machine is decided by **when it happens next**: if it hits
+during school hours in Korea, add one.
 
 ## 🚨 Incident #2 — an outage nobody could report, caught in the logs (2026-09-01, around 07:00)
 

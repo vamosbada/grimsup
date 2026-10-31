@@ -3,54 +3,65 @@
 > **Legend**: ✅ confirmed (order and scope are set) · 🧭 direction (decided to do it; scope waits on real-user answers)
 > The two are never mixed. A feature marked as direction may not be built as written.
 
-What is live today is stage 1: auth · gallery · school page. Four things go on top of it, and before
-them **the operating foundation gets filled in**. Two incidents set that order.
+What is live today: auth (Google · Kakao) · gallery · community · school page · alerts and backups.
+Next is the AI agent, Grimmy. The operating foundation was filled in **before** the community went
+wide, because two incidents set that order.
 
 ---
 
-## 0. Observability — first ✅
+## 0. Observability ✅ done first · the rest continues
 
-Incidents #1 and #2 were both found **by chance, not by an alert.** Records exist, but the records do
-not call me. This gets filled before more features are added.
+Incidents #1 and #2 were both found **by a person or by chance, not by an alert.** Records existed, but
+the records did not call me. So this went in before more features were added.
+
+**Done**
 
 ```
-Alerting        🔴 Watching error levels alone would miss #2 again. A 403 is a correct response and is logged at INFO
-                → "request rate from the same user" and similar anomaly patterns become part of the criteria
-Log retention   Only what the host keeps for a short time. The evidence for #2 did not survive one day (measured)
-Health check    /health exists but nobody calls it. And it does not touch the DB — a green deploy ≠ DB connected
-Own backups     Relying only on the managed DB's restore window (6 hours). pg_dump → R2 by hand once, then automate
-Frontend tests  Zero. #2 was a frontend state-transition bug, and this was the only layer that could catch it
-SLO definition  Without "how often should I look?" there is no basis for alert thresholds
-Deploy automation  The backend is deployed by running fly deploy from a laptop. Checks (pytest · types · lint) are manual too
+Alerting        Error alerts and an uptime check (/health every minute · alert after 3 failures in a row),
+                by email. Live since 10-14. Measured: ~3 min from outage to alert.
+                #3 and #4 were both caught this way
+Health check    The uptime check is what calls /health now. It deliberately does not touch the DB —
+                a DB query every minute would keep the managed DB from ever sleeping
+Own backups     Daily pg_dump → R2, kept 30 days · a restore was actually tested once.
+                A cron monitor alerts if the backup fails **or never runs at all** —
+                a failed job leaves logs, a job that never started leaves nothing
 ```
 
-**Remote operation ✅** is why the list above has to stand. For three months the system has to run from
-another country **on maintenance alone.** That needs a setup where "the system calls me even when I am
-not looking". Observability is not a feature. It is the precondition for that switch.
+**Next**
+
+```
+Request-rate alerts  Error alerts alone would still miss #2. A 403 is a correct response, logged at INFO
+Log retention        Only what the host keeps. The evidence for #2 did not survive one day (measured)
+Frontend tests       Zero. #2 was a frontend state-transition bug, and this was the only layer that could catch it
+SLO definition       Without "how often should I look?" there is no basis for alert thresholds
+CI · deploy          The backend is deployed by running fly deploy from a laptop. Checks are run by hand
+Phone-only response  #3: the alert arrived in flight and there was no lever to pull from a phone
+```
+
+**Remote operation ✅ running now.** For three months the system runs from another country **on
+maintenance alone.** That needed a setup where "the system calls me even when I am not looking", and
+alerts and backups went in before leaving. #3 showed the next layer: being called is not the same as
+being able to act.
 
 ---
 
-## 1. Community ✅ — the real users' first request
+## 1. Community ✅ done — the real users' first request
 
-The goal is concrete: **turn off the external community app in use today.** Notices live there, so
-parents have to check two places. The real user said *"notices are what matter"*, and the work was split
-in that order.
+The goal was concrete: **turn off the external community app.** Notices lived there, so parents had to
+check two places. The real user said *"notices are what matter"*, and the work was split in that order.
 
 ```
-① Second login provider   🔴 First. Today there is only Google. A second provider needs the account
-                          structure split (one person = one account, several login methods).
-                          Schema changes are **cheap while tables are small** — sign-ups grow daily,
-                          so the longer this waits the more it costs
-② Notices + comments      This is enough to turn off the external app → first release
-③ Kids' posts             + photos + a note on removing hurtful posts
-                          🔴 XSS / CSP headers land **here**. This is where free-form input grows.
-                          Today XSS defense is React's escaping, one layer. When a rich-text editor
-                          comes in, it gets redesigned together with sanitizing
+① Second login provider   ✅ Kakao, added first. The account structure was split
+                          (one person = one account, several login methods) while tables were still small.
+                          Linking a second login to an existing account came after
+② Notices + comments      ✅ The external app was turned off for notices
+③ Kids' posts             ✅ Kids and parents post drawings and stories · private posts on the talk board
+                          Free-form input grew here, so XSS was handled before it opened
 ```
 
 ---
 
-## 2. Grimi — AI Agent 🧭
+## 2. Grimmy — AI Agent 🧭
 
 An agent built on **LangGraph**, running in the same image as FastAPI. It answers parents' questions from
 school information (**RAG** on PostgreSQL's pgvector) and handles **write actions** like absence and
@@ -98,11 +109,7 @@ It is not in use yet.
 
 ## 3. Pickup alerts 🧭
 
-Notify the guardian when a child arrives or leaves. Today this runs on a device at the school plus an
-external app. The direction is to move it to our own web push.
-
-Before designing anything, **one on-site visit**: the app in use · how data is entered · how busy
-pickup hour gets. This is fieldwork, not code. Once it is written down, development can happen anywhere.
+Notify the guardian when a child arrives or leaves. Planned for later.
 
 ---
 
@@ -115,7 +122,8 @@ features.
 Photo watermark     Requested three times. It goes into the upload path — a separate tool would mean
                     stamping every photo by hand
                     + let the teacher swap the school page photos without a developer (precondition for remote operation)
-Admin roster        The admin screen shows only pending approvals. What was wanted was a **roster**, not a count
+Admin roster        ✅ done. The admin screen used to show only pending approvals. What was wanted was a
+                    **roster** of everyone who signed up, not a count
 ```
 
 ---

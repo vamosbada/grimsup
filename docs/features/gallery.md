@@ -143,8 +143,7 @@ Identity         not in the URL. The cookie decides
 Audit            opening a room writes one audit row — who · when · which room
 ```
 
-**Decision ⑩ — an allow-list, not a deny-list.** Roles today are teacher, parent, visitor. When the
-community opens, a new role like **student** arrives. This check does not need to change: the new role
-is **automatically shut out of the gallery** because it is not on the list. A deny-list (`not in`) would
-have let it through by default.
+**Decision ⑩ — an allow-list, not a deny-list.** When the community opened, a new role, **student**,
+arrived. This check did not change: the new role was **automatically shut out of the gallery** because
+it is not on the list. A deny-list (`not in`) would have let it through by default.
 → Login and approval in full: [auth.md](./auth.md)
