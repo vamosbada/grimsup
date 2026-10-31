@@ -22,10 +22,10 @@
 
 | # | Date | Grade | Detected by | Noticed → over | Open items |
 |---|------|-------|-------------|----------------|------------|
-| 4 | 10-16 | 🟢 | **alert** | no user impact | ✅ fixed 10-23 (regression test) |
-| 3 | 10-17 | 🟡 | **alert** | ~14 min (the provider recovered on its own) | responding from a phone alone · single machine |
-| 2 | 09-01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10-14 · log retention · frontend tests |
-| 1 | 08-29 | 🔴 | a person | ~20 min | ✅ alerting 10-14 · log retention |
+| 4 | 10‑16 | 🟢 | **alert** | no user impact | ✅ fixed 10‑23 (regression test) |
+| 3 | 10‑17 | 🟡 | **alert** | ~14 min (the provider recovered on its own) | responding from a phone alone · single machine |
+| 2 | 09‑01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10‑14 · log retention · frontend tests |
+| 1 | 08‑29 | 🔴 | a person | ~20 min | ✅ alerting 10‑14 · log retention |
 
 **Grading — one question: "could the user do what they came to do?"**
 

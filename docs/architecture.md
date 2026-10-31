@@ -44,7 +44,7 @@ This was the first rule we fixed. Every endpoint sits on top of it.
 Instead of guarding the attack surface with checks, we chose **not to build the surface at all.**
 Forgetting a permission check on a new endpoint becomes structurally hard.
 
-**Membership is confirmed by the teacher, not by Google.** Google login proves *whose account* this is.
+**Membership is confirmed by the teacher, not by the login provider.** Google or Kakao login proves *whose account* this is.
 It cannot know *whether this person is a parent at this school*. So after sign-up, the gallery stays
 closed until the teacher approves.
 

@@ -19,7 +19,8 @@ Photo     uploaded by the teacher, tagged with which child drew it (siblings can
 Album     per-child view · full-size view · infinite scroll back to old drawings
 Reactions emoji · read receipts
 Alerts    new photo → web push to the room's guardians
-Delete    teacher only. It is a "deleted" mark, so it can be undone, and it disappears on the other side too
+Delete    your own messages only (photos come from the teacher). It is a "deleted" mark, so it can be
+          undone, and it disappears on the other side too
 ```
 
 Three things differ from a messenger: **the data stays with the school** (a messenger's history cannot

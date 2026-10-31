@@ -97,7 +97,7 @@ that code.
 | 1 | **Permission boundary** | The agent's DB access never goes beyond "the requesting parent's own children". It passes the same auth and permission checks as every other API. No back door because it is an agent |
 | 2 | **Audit + rollback** | Writes such as requests record who · when · what, and can be undone. Soft delete already exists; this builds on it |
 | 3 | **Transactions** | Multi-step actions like "approve + register student + link guardian" are atomic. No half-done state is left behind |
-| 4 | **Prompt-injection defense** | Parents' input goes into the prompt. The tools the agent may call are an allow-list. Whatever the input says, nothing outside the list can run |
+| 4 | **Prompt‑injection defense** | Parents' input goes into the prompt. The tools the agent may call are an allow-list. Whatever the input says, nothing outside the list can run |
 | 5 | **Observability** | Log and trace LLM calls and tool calls (LLM observability). Incident response needs "why did it answer that?" to be answerable later |
 | 6 | **PII minimization** | Student and parent data leaves for an external LLM API. Put as few fields in the prompt as possible |
 | 7 | **Cost and rate limits** | Control LLM cost and call frequency. One user cannot spend the whole budget |
