@@ -120,9 +120,9 @@ Separate from the feature stages, these came straight from the real user. Often 
 features.
 
 ```
-Photo watermark     Requested three times. It goes into the upload path — a separate tool would mean
-                    stamping every photo by hand
-                    + let the teacher swap the school page photos without a developer (precondition for remote operation)
+Photo watermark     ✅ done. Requested three times. It went into the upload path — a separate tool would
+                    mean stamping every photo by hand
+Home page photos    ✅ done. The teacher swaps them without a developer (precondition for remote operation)
 Admin roster        ✅ done. The admin screen used to show only pending approvals. What was wanted was a
                     **roster** of everyone who signed up, not a count
 ```
