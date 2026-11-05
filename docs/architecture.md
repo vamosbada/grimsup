@@ -19,7 +19,7 @@
 Users      Browser / home-screen app (PWA) + Service Worker (receives push)
 Frontend   Next.js static export → Cloudflare Pages (CDN). No server runtime
 Backend    FastAPI (Docker) → Fly.io, Singapore. Auth · permission checks · gallery · community · admin · push · audit log
-Storage    PostgreSQL (managed) · Cloudflare R2 (photo originals + thumbnails, private bucket)
+Storage    PostgreSQL (managed) · Cloudflare R2 (photo originals + thumbnails in a private bucket · a separate public bucket for home page photos only)
 External   Google OAuth · Kakao OAuth · Apple/Google push servers · GIPHY (GIF search, called by the browser directly)
 Ops        Error and uptime alerts by email · daily backup to separate storage
 Planned    Grimmy (LLM API) · pickup alerts — both on the same backend · log retention
@@ -70,7 +70,8 @@ users ─┬─< user_identities                 login methods (Google · Kakao)
        │          └─< post_media           photos inside a post
        ├─< notifications                   unread badges
        ├─< push_subscriptions              one row per device
-       └─< audit_logs                      who opened what
+       ├─< audit_logs                      who opened what
+       └─< slider_photos                   home page photos · one row per slot · last editor only
 ```
 
 ### Deletion in two layers
