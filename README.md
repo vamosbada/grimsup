@@ -112,7 +112,7 @@ Detecting a problem and being able to respond to it turned out to be two differe
 Grimmy (AI Agent)     LangGraph · RAG (pgvector) · tool calling. Per-role tools · 7 safeguards.
                       Stabilize with read-only tools first → write tools only after the safeguards stand.
 
-Operations            Log retention · frontend tests · CI · SLOs · CSP.
+Operations            Log retention · frontend tests · CI · SLOs · rate limiting · CSP enforcement.
 
 Remote operation      Running now: three months from another country, maintenance only.
                       Alerts and backups were the precondition, and they went in before leaving.

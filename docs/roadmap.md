@@ -36,7 +36,8 @@ Frontend tests       Zero. #2 was a frontend state-transition bug, and this was 
 SLO definition       Without "how often should I look?" there is no basis for alert thresholds
 CI · deploy          The backend is deployed by running fly deploy from a laptop. Checks are run by hand
 Phone-only response  #3: the alert arrived in flight and there was no lever to pull from a phone
-CSP header           A second layer against XSS, on top of React's escaping
+Rate limiting        Next
+CSP enforcement      A second layer against XSS, on top of React's escaping
 ```
 
 **Remote operation ✅ running now.** For three months the system runs from another country **on
