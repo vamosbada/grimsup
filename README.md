@@ -130,7 +130,7 @@ Pickup alerts         Needs on-site testing, so it waits until I am back.
 |---|---|
 | Frontend | Next.js (App Router · static export) · TypeScript · Tailwind · PWA + Web Push |
 | Backend | FastAPI · SQLAlchemy · Alembic |
-| DB | PostgreSQL (managed) · 16 tables · 19 migrations |
+| DB | PostgreSQL (managed) · 17 tables · 20 migrations |
 | Infra | Cloudflare Pages + R2 · Fly.io (Docker) · Cloudflare Registrar |
 | Auth | Google · Kakao OAuth · HttpOnly cookie JWT · teacher approval for membership |
 | Testing | pytest against real PostgreSQL · TypeScript · ESLint |

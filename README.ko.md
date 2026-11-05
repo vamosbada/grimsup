@@ -123,7 +123,7 @@
 |---|---|
 | 프론트 | Next.js (App Router · 정적 export) · TypeScript · Tailwind · PWA + 웹 푸시 |
 | 백엔드 | FastAPI · SQLAlchemy · Alembic |
-| DB | PostgreSQL (관리형) · 표 16개 · 마이그레이션 19건 |
+| DB | PostgreSQL (관리형) · 표 17개 · 마이그레이션 20건 |
 | 인프라 | Cloudflare Pages + R2 · Fly.io (Docker) · Cloudflare Registrar |
 | 인증 | 구글 · 카카오 OAuth · HttpOnly 쿠키 JWT · 선생님 승인 기반 소속 확인 |
 | 테스트 | pytest(실제 PostgreSQL) · TypeScript · ESLint |

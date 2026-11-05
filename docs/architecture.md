@@ -55,7 +55,7 @@ closed until the teacher approves.
 
 ## 3. Data model
 
-16 tables · 19 migrations.
+17 tables · 20 migrations.
 
 ```
 users ─┬─< user_identities                 login methods (Google · Kakao) — one person, one account
