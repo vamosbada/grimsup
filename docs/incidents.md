@@ -18,10 +18,11 @@
 > open gap. "Noticed → over" is measured from the user's point of view, not from deploy time.
 >
 > #1 and #2 were found by a person and by chance. Alerting went in on 10-14.
-> **#3 and #4 were both caught by an alert.**
+> **#3, #4, and #5 were all caught by an alert.**
 
 | # | Date | Grade | Detected by | Noticed → over | Open items |
 |---|------|-------|-------------|----------------|------------|
+| 5 | 11‑05 | 🔴 | **alert** | 1 min → ~15.5 h (held overnight) | one real write in production as part of deploy checks |
 | 4 | 10‑16 | 🟢 | **alert** | no user impact | ✅ fixed 10‑23 (regression test) |
 | 3 | 10‑17 | 🟡 | **alert** | ~14 min (the provider recovered on its own) | responding from a phone alone · single machine |
 | 2 | 09‑01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10‑14 · log retention · frontend tests |
@@ -145,6 +146,74 @@ Action    (one line · commit hash)
 # Log
 
 <!-- Newest first. #2 and #1 keep the pre-revision format -->
+
+## 🚨 Incident #5 — the storage key could not write to a new bucket, so the teacher's photo swap failed (2026-11-05 12:57 KST)
+
+> A release that had passed local testing, pytest, and the post-deploy check failed on its first real
+> use. Local and production use different buckets, so "it works locally" proved nothing about
+> production permissions.
+
+```
+Impact   one user (the teacher) · tried the new "change home page photos" feature 13 times, all failed
+         The home page and every other feature were fine. Storage refused the upload, so nothing was
+         written to the DB and the home page kept its existing photos
+Grade    🔴 blocked — the teacher could not do it and had no workaround
+         the teacher could see it failed (an error message on screen; its wording could not be confirmed)
+Timeline (KST)
+         deployed  11-05 around 12:50 — I told the teacher the feature was ready
+         occurred  before 12:57 (last error event; the first event's time could not be confirmed)
+         noticed   12:58 — alert email
+         held      about 22:00 in Mexico, where I was. I was in no state to analyze it properly, and visitors
+                   were unaffected, so I chose to fix it the next day
+         fix       11-06 around 04:20 — token setting changed, no code commit
+         over      11-06 around 04:20 — one real swap succeeded in production
+```
+
+### Detect — how we noticed
+
+**By: alert**
+
+The teacher tried the feature right after I announced it. I heard about the failure first from the alert email.
+
+### Diagnose — how we narrowed it to the cause
+
+**What we saw**: an access-denied error from the storage upload call, with a 403 from R2.
+
+**Order of elimination**:
+1. What failed → the upload to the bucket was refused
+2. How far our code got → all the way to its last call. R2 refused it; our logic did not fail
+3. What the response meant → 403, not 401: R2 knew who we were, but we had no permission
+4. What works vs. what does not → local works, production fails. Same code, same token, different bucket
+5. The token's settings → every bucket was listed except the new production one. Confirmed
+
+**Wrong guesses**: none.
+
+### Recover — what changed
+
+```
+Changed         added the new bucket to the backend token's allowed buckets (read and write)
+                Not "all buckets": that would let this key open the backups too
+Temporary/root  root — the missing permission was added
+Deployed        nothing. The token value did not change, so no restart or deploy was needed
+Verified        one photo swapped from the production admin screen → it appeared on the home page, watermarked
+                This was also the first production check of the new image domain
+Regression test none — the permission lives in Cloudflare settings, which pytest cannot reach
+Rollback        remove the bucket from the token (no reason to)
+```
+
+### What we learned — why we did not catch it earlier
+
+**Why automated checks passed**: three layers missed the same gap. pytest replaces uploads with a fake, so
+it checks which bucket the code asks for, never whether the key can open it. The local check used real
+R2, but a different bucket. The post-deploy check was a read that only touched the DB and never wrote to R2.
+
+**Why docs or rules did not warn us**: the pre-deploy list did include this step. It was still unchecked
+when the deploy went out. The list said what to do, but nothing said "do not deploy until this is done."
+
+**Next candidate of the same kind**: any new external resource with production-only settings: the next
+bucket, a new API key (the agent's LLM), a new subdomain. While local and production use different
+resources, local success does not prove production permissions. A deploy check now includes **one real
+write in production**.
 
 ## 🟢 No impact #4 — two identical "read" requests at the same moment caused a 500 (2026-10-16 06:20 KST)
 
