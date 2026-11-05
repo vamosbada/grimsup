@@ -2,7 +2,7 @@
 
 **[grimsup.com](https://grimsup.com)** · live since 2026-08-29 · in production with real users
 
-> **The code is private** — it handles real users' photos. This repository is the system's design, operations, and incident record.
+> **The code is private** — it handles real users' photos. This repository is the system's design, operations, and [incident record](./docs/incidents.md).
 
 > 🇰🇷 한국어: [README.ko.md](./README.ko.md)
 
@@ -43,9 +43,9 @@ Tools that only scale demands (Kubernetes and friends) stay out.
 This service handles children's photos. One photo shown to the wrong person ends that trust.
 So "is it convenient?" came second to **"can it be shown to the wrong person?"**
 
-📌 **No numbers yet.** Visitor counts are not the point. Once DAU and per-feature usage data have
-built up, real values will be added here along with operating metrics (uptime · incident count ·
-time to recover · cost).
+📌 **Five incidents so far, all on record.** The first two were found by a person and by chance.
+Alerting went in, and the next three were all caught by an alert.
+→ [The incident log](./docs/incidents.md). Uptime and cost figures will be added here later.
 
 ---
 
@@ -63,7 +63,7 @@ PC. The screens are designed separately for each, but the code and the deploymen
 | **Web push** | Install to the home screen and the phone rings when a photo, a new post, or a comment arrives | parents · students · teacher | ✅ live |
 | **Admin** | Approve parents and students · register students · link guardians · full member roster · manage accounts | teacher | ✅ live |
 | **School page** | Location · classes · photos. Public page with search and link previews · privacy policy | anyone | ✅ live |
-| **Monitoring · backups** | Error and uptime alerts by email · daily database backup, with a restore actually tested | developer | ✅ live |
+| **Monitoring · backups** | Error and uptime alerts by email · daily database backup, with a restore actually tested | developer | ✅ live · [incident log](./docs/incidents.md) |
 | **Grimmy (AI Agent)** | An agent with **different tools for parents, teacher, and visitors**. From answering questions and handling absence/make-up requests to the teacher's morning briefing and pickup alerts. Not a chatbot wrapped around an API — an agent with permission boundaries, audit, and tracing | whole school | planned |
 | **Pickup alerts** | Notify the guardian's phone when a child arrives or leaves. Whether this lives inside Grimmy or stands alone will be decided on site | parents | planned |
 
@@ -92,15 +92,27 @@ Storage    PostgreSQL (managed) · Cloudflare R2 (photos)
 
 Incidents are treated as harvest, not accidents. Each one is written up in four parts:
 **detect → diagnose → recover → what we learned**. Missed causes and wrong guesses stay in the record.
-There were two incidents in the first week after launch, and **neither was found by an alert**:
-one was reported by a person, the other spotted by chance in the logs. So alerting and daily backups
-went in next, with a restore actually tested.
 
-Then the alerts started doing their job. A race between two identical requests **was caught by an
-alert before any user noticed**, fixed, and locked in with a regression test. The next day, a host
-failure at the cloud provider **was caught by an alert three minutes in.** I saw it right away, on a
-flight to Mexico, and could do nothing about it. The provider recovered on its own 17 minutes later.
-Detecting a problem and being able to respond to it turned out to be two different things.
+**The first week: no alerts.**
+
+- **#1 — Sign-up blocked, five minutes after launch.** A 1,132-character Google profile-picture URL
+  did not fit its column. The tests had passed because our fake Google only returned short URLs.
+  A person reported it.
+- **#2 — An outage nobody could report.** The screen looked fine while one open tab sent the server
+  about five pairs of requests per second. I found it by chance in the logs.
+
+So alerting and daily backups went in next, with a restore actually tested.
+
+**After that: the alerts did their job.**
+
+- **#4 — Two identical requests collided.** An alert caught it with no user impact. Fixed and locked
+  in with a regression test.
+- **#3 — A host failure at the cloud provider.** An alert fired three minutes in. I saw it right away,
+  on a flight to Mexico, and could do nothing. The provider recovered on its own 17 minutes after the
+  failure began. Detecting a problem and being able to respond to it are two different things.
+- **#5 — A new feature failed on its first real use.** Tests, a local check, and a post-deploy check
+  had all passed, but the production storage key had no permission on a new bucket. The alert reached
+  me first. One real write in production is now part of every deploy check.
 
 → Full incident write-ups and the recording rules: **[docs/incidents.md](./docs/incidents.md)**
 
@@ -143,9 +155,9 @@ Pickup alerts         Needs on-site testing, so it waits until I am back.
 
 | Document | What |
 |---|---|
+| [Incidents](./docs/incidents.md) | Incident write-ups — grows with every incident |
 | [Architecture](./docs/architecture.md) | How the system fits together and why |
 | [Feature docs](./docs/features/) | One document per feature — the decisions wired into the code |
-| [Incidents](./docs/incidents.md) | Incident write-ups — grows with every incident |
 | [Roadmap](./docs/roadmap.md) | What comes next — confirmed vs. direction |
 | ADRs (architecture decision records) | *in preparation* |
 | [TIL](https://github.com/vamosbada/TIL) | Learning notes — retrospectives for this project link here |
