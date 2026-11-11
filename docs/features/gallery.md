@@ -18,6 +18,7 @@ Room      one parent = one room. The teacher sees every room. The room is create
 Photo     uploaded by the teacher, tagged with which child drew it (siblings can share a room)
 Album     per-child view · full-size view · infinite scroll back to old drawings
 Reactions emoji · read receipts
+GIFs      search and send in the chat — the browser calls GIPHY directly; the server accepts only GIPHY links
 Alerts    new photo → web push to the room's guardians
 Delete    your own messages only (photos come from the teacher). It is a "deleted" mark, so it can be
           undone, and it disappears on the other side too

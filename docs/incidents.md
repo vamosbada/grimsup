@@ -25,7 +25,7 @@
 | 5 | 11‑05 | 🔴 | **alert** | 1 min → ~15.5 h (held overnight) | one real write in production as part of deploy checks |
 | 4 | 10‑16 | 🟢 | **alert** | no user impact | ✅ fixed 10‑23 (regression test) |
 | 3 | 10‑17 | 🟡 | **alert** | ~14 min (the provider recovered on its own) | responding from a phone alone · single machine |
-| 2 | 09‑01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10‑14 · log retention · frontend tests |
+| 2 | 09‑01 | 🟡 | chance | unknown (old JS kept running in open tabs) | ✅ alerting 10‑14 · log retention |
 | 1 | 08‑29 | 🔴 | a person | ~20 min | ✅ alerting 10‑14 · log retention |
 
 **Grading — one question: "could the user do what they came to do?"**
@@ -366,7 +366,7 @@ that already exists in the backend tests) would pass this guard and fall into th
 ②  Added `if (!canUseGallery) return;` to the polling effect — no request at all when not eligible
 ③  Rewrote the eligibility expression in the **same shape** as the backend: active && (director || parent)
 ④  Removed the duplicate computation in the render branch below — written once
-Deployed  frontend only, no fly deploy. main push → Cloudflare Pages build
+Deployed  frontend only, no fly deploy. main push → Cloudflare build (Workers)
 ```
 
 Matching the *shape* in ③ was not taste. **When the same rule lives in two places, you have to be able
@@ -385,7 +385,6 @@ secondary signal.
 
 ```
 pytest, 153 tests   all green — the backend really was correct. Backend tests cannot catch this
-frontend tests      zero. This loop was a frontend state-transition bug, and this was the only layer that could catch it
 ```
 
 > **One side being correct does not prevent an outage.** The failure was the **combination** of a server

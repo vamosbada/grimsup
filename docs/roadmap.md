@@ -3,7 +3,7 @@
 > **Legend**: ✅ confirmed (order and scope are set) · 🧭 direction (decided to do it; scope waits on real-user answers)
 > The two are never mixed. A feature marked as direction may not be built as written.
 
-What is live today: auth (Google · Kakao) · gallery · community · school page · alerts and backups.
+What is live today: auth (Google · Kakao) · gallery · community · school page · alerts and backups · CI/CD.
 Next is the AI agent, Grimmy. The operating foundation was filled in **before** the community went
 wide, because two incidents set that order.
 
@@ -25,6 +25,8 @@ Health check    The uptime check is what calls /health now. It deliberately does
 Own backups     Daily pg_dump → R2, kept 30 days · a restore was actually tested once.
                 A cron monitor alerts if the backup fails **or never runs at all** —
                 a failed job leaves logs, a job that never started leaves nothing
+CI/CD           Merging to main runs the tests, backs up, and deploys — backend first, then frontend.
+                Since 11-10. → ci-cd.md
 ```
 
 **Next**
@@ -32,12 +34,9 @@ Own backups     Daily pg_dump → R2, kept 30 days · a restore was actually tes
 ```
 Request-rate alerts  Error alerts alone would still miss #2. A 403 is a correct response, logged at INFO
 Log retention        Only what the host keeps. The evidence for #2 did not survive one day (measured)
-Frontend tests       Zero. #2 was a frontend state-transition bug, and this was the only layer that could catch it
 SLO definition       Without "how often should I look?" there is no basis for alert thresholds
-CI · deploy          The backend is deployed by running fly deploy from a laptop. Checks are run by hand
 Phone-only response  #3: the alert arrived in flight and there was no lever to pull from a phone
 Rate limiting        Next
-CSP enforcement      A second layer against XSS, on top of React's escaping
 ```
 
 **Remote operation ✅ running now.** For three months the system runs from another country **on

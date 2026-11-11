@@ -17,11 +17,11 @@
 
 ```
 Users      Browser / home-screen app (PWA) + Service Worker (receives push)
-Frontend   Next.js static export → Cloudflare Pages (CDN). No server runtime
+Frontend   Next.js static export → Cloudflare Workers (static assets, CDN). No server runtime
 Backend    FastAPI (Docker) → Fly.io, Singapore. Auth · permission checks · gallery · community · admin · push · audit log
 Storage    PostgreSQL (managed) · Cloudflare R2 (photo originals + thumbnails in a private bucket · a separate public bucket for home page photos only)
 External   Google OAuth · Kakao OAuth · Apple/Google push servers · GIPHY (GIF search, called by the browser directly)
-Ops        Error and uptime alerts by email · daily backup to separate storage
+Ops        Error and uptime alerts by email · daily backup to separate storage · CI/CD on GitHub Actions
 Planned    Grimmy (LLM API) · pickup alerts — both on the same backend · log retention
 ```
 
@@ -55,7 +55,7 @@ closed until the teacher approves.
 
 ## 3. Data model
 
-17 tables · 20 migrations.
+19 tables · 24 migrations.
 
 ```
 users ─┬─< user_identities                 login methods (Google · Kakao) — one person, one account
@@ -71,6 +71,7 @@ users ─┬─< user_identities                 login methods (Google · Kakao)
        ├─< notifications                   unread badges
        ├─< push_subscriptions              one row per device
        ├─< audit_logs                      who opened what
+       ├── reviews (1:1)                   a leaving family's review · only the teacher reads it
        └─< slider_photos                   home page photos · one row per slot · last editor only
 ```
 
@@ -87,7 +88,7 @@ And the DB-layer value is **not the same everywhere.** The rule: **"if we lose i
 
 | Value | Where | Why |
 |---|---|---|
-| **RESTRICT**<br/>(cannot just delete) | teacher account · parent accounts · the actor in an audit row | If the teacher's account went with it, **every room's photos would vanish at once** |
+| **RESTRICT**<br/>(cannot just delete) | teacher account · parent accounts | If the teacher's account went with it, **every room's photos would vanish at once** |
 | **SET NULL**<br/>(blank the reference) | the student tag on a drawing · read bookmarks | A tag can be filled in again. **A lost drawing cannot be brought back** |
 | **CASCADE**<br/>(goes with the parent) | push subscriptions · emoji · read marks | Meaningless without the parent row, or **cheap to recreate at any time** |
 
@@ -119,33 +120,12 @@ still small. Schema changes are cheap when there are few rows.
 
 ---
 
-## 5. Deployment — from one line of code to real users
+## 5. Deployment
 
-**Frontend and backend deploy separately.** Frontend is automatic, backend is manual.
-
-```
-Frontend   git push main → Cloudflare Pages builds → live on the CDN
-           The dev branch is never deployed. Only main.
-           ⚠️ Values baked in at build time (NEXT_PUBLIC_*) do not change when you edit an
-              environment variable and republish. The reliable trigger is one new commit pushed to main.
-
-Backend    fly deploy (from a laptop) → image build → release_command runs migrations →
-           if they pass, traffic moves to the new version; if they fail, the old version keeps running
-           🔴 Why migrations live in release_command and not in the container start command (CMD):
-              In CMD they would run on every machine restart, and with several machines they would
-              run at the same time and collide. release_command runs exactly once per deploy, before
-              the new version comes up. If it fails, the new version never starts, so code that does
-              not match the schema never reaches production.
-```
-
-**Public lock switch.** One environment variable moves three things at once: the public page becomes
-a "coming soon" screen · a `noindex` meta tag · `Disallow` in `robots.txt`. We could rehearse on real
-devices before launch without search engines picking it up.
+Merging to main is the deploy, for both sides (since 11-10).
 
 ```
-Backups    GitHub Actions, daily → pg_dump → separate R2 storage, kept 30 days
-           A cron monitor alerts if the job fails or never runs at all · a restore was tested once
+push → tests → (main only) backup → backend deploy → health check from outside → frontend deploy
 ```
 
-There is no CI yet. Checks (pytest · types · lint) run by hand before each deploy.
-Automation is part of "remote operation" on the [roadmap](./roadmap.md).
+→ How it runs and why it was built this way: **[CI/CD](./ci-cd.md)**
