@@ -163,7 +163,6 @@ Pickup alerts         Needs on-site testing, so it waits until I am back.
 | [CI/CD](./docs/ci-cd.md) | How a merge reaches production, and why it was built this way |
 | [Feature docs](./docs/features/) | One document per feature — the decisions wired into the code |
 | [Roadmap](./docs/roadmap.md) | What comes next — confirmed vs. direction |
-| ADRs (architecture decision records) | *in preparation* |
 | [TIL](https://github.com/vamosbada/TIL) | Learning notes — retrospectives for this project link here |
 | Tech blog (Medium) | *in preparation* — design decisions and incidents as posts |
 

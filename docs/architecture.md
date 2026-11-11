@@ -95,9 +95,6 @@ And the DB-layer value is **not the same everywhere.** The rule: **"if we lose i
 > 🔴 Both point at `users`, yet **push subscriptions CASCADE while rooms RESTRICT.**
 > **The value is set by how recoverable the loss is, not by what the row points to.**
 
-> 📌 The full reasoning is in an **ADR (Architecture Decision Record)** in the private repository.
-> It will be published here after review.
-
 **Every timestamp is `timestamptz`.** Three clocks are involved: the server (Singapore), the database,
 and users (Korea). A column without a time zone forces the question "whose clock?" every time.
 Eight columns were created without a time zone early on and were all migrated while the tables were
