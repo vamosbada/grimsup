@@ -46,7 +46,7 @@ So "is it convenient?" came second to **"can it be shown to the wrong person?"**
 
 📌 **Five incidents so far, all on record.** The first two were found by a person and by chance.
 Alerting went in, and the next three were all caught by an alert.
-→ [The incident log](./docs/incidents.md). Uptime and cost figures will be added here later.
+Uptime and cost figures will be added here later.
 
 ---
 
@@ -64,7 +64,7 @@ PC. The screens are designed separately for each, but the code and the deploymen
 | **Web push** | Install to the home screen and the phone rings when a photo, a new post, or a comment arrives | parents · students · teacher | ✅ live |
 | **Admin** | Approve parents and students · register students · link guardians · full member roster · move a child who left to guest (reversible) · manage accounts | teacher | ✅ live |
 | **School page** | Location · classes · photos. Public page with search and link previews · privacy policy | anyone | ✅ live |
-| **Monitoring · backups** | Error and uptime alerts by email · daily database backup, with a restore actually tested | developer | ✅ live · [incident log](./docs/incidents.md) |
+| **Monitoring · backups** | Error and uptime alerts by email · daily database backup, with a restore actually tested | developer | ✅ live |
 | **Grimmy (AI Agent)** | An agent with **different tools for parents, teacher, and visitors**. From answering questions and handling absence/make-up requests to the teacher's morning briefing and pickup alerts. Not a chatbot wrapped around an API — an agent with permission boundaries, audit, and tracing | whole school | planned |
 | **Pickup alerts** | Notify the guardian's phone when a child arrives or leaves. Whether this lives inside Grimmy or stands alone will be decided on site | parents | planned |
 
